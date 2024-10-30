@@ -47,7 +47,7 @@ python record.py --task test1 --pair 1
 Double
 
 ```
-python record.py --task test1 --pair 1
+python record.py --task test1 --pair 2
 ```
 
 ## 動画作成
