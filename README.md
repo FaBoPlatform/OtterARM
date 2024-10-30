@@ -1,6 +1,6 @@
-# OTTER ARM
+# Otter ARM
 
-## OTTER ARMとは？
+## Otter ARMとは？
 
 小型ロボットアームのプロジェクトです。TransfomerベースのAIロボットアーム制御を主軸においたロボットアームです。
 
