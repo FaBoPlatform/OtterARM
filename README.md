@@ -1,1 +1,3 @@
 # OtterARM
+
+![](./img/logo.png)
