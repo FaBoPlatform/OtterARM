@@ -6,6 +6,17 @@
 
 ![](./img/logo.png)
 
+## ライセンス
+
+このプロジェクトはMITライセンスの下で公開されています。
+
+### サードパーティライセンス
+
+- `./detr/` ディレクトリには、Apacheライセンス2.0の下で提供されているFacebookの[DETR](https://github.com/facebookresearch/detr)からのコードが含まれています。
+- `./act/` ディレクトリには、MITライセンスの下で提供されているTony Z. Zhao氏の(https://github.com/tonyzhaozh/act)からのコードが含まれています。
+
+詳細は各ディレクトリ内の `LICENSE` ファイルを参照してください。
+
 ## 基本構成
 
 Single
