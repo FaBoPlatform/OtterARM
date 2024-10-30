@@ -401,43 +401,7 @@ if __name__ == "__main__":
     # サーボIDの設定
     follower_ids = list(range(1, arm_dim + 1))  # 1からarm_dimまでのフォロワーID
     leader_ids = list(range(1, arm_dim + 1))    # 1からarm_dimまでのリーダーID
-
-    # コントローラーのインスタンス作成
-    controller_followers = []
-    controller_leaders = []
     terminate_event = threading.Event()  # スレッドの終了を通知するイベント
-
-
-    # 各ペアのコントローラーを設定
-    for pair_index in range(num_pairs):
-        follower_port = getattr(constants, f'FOLLOWER{pair_index}')
-        leader_port = getattr(constants, f'LEADER{pair_index}')
-
-        controller_follower = DynamixelController(follower_port, buadrate)
-        controller_leader = DynamixelController(leader_port, buadrate)
-
-        # ポートの設定
-        if not controller_follower.setup_port():
-            sys.exit("フォロワーのポート設定に失敗しました。プログラムを終了します。")
-        if not controller_leader.setup_port():
-            sys.exit("リーダーのポート設定に失敗しました。プログラムを終了します。")
-        controller_follower.enable_torque(follower_ids)
-
-        # リーダーをPWMモードに設定
-        ids = [6]
-        PWM_MODE = 16
-        controller_leader.set_operation_mode(ids, PWM_MODE)
-
-        # トルクを再度有効化する
-        controller_leader.enable_torque(ids)
-
-        # 設定したPWMが反映されるかを確認するためのデバッグ出力
-        goal_pwm = 200  # PWM値を調整
-        controller_leader.set_pwm(ids, [goal_pwm])
-
-        # コントローラーをリストに追加
-        controller_followers.append(controller_follower)
-        controller_leaders.append(controller_leader)
 
     # 利用可能なカメラデバイスIDを確認
     print("カメラをチェックします...")
@@ -456,6 +420,44 @@ if __name__ == "__main__":
 
     try:
         for episode in range(num_episodes):
+
+            # コントローラーのインスタンス作成
+            controller_followers = []
+            controller_leaders = []
+
+
+            # 各ペアのコントローラーを設定
+            for pair_index in range(num_pairs):
+                follower_port = getattr(constants, f'FOLLOWER{pair_index}')
+                leader_port = getattr(constants, f'LEADER{pair_index}')
+
+                controller_follower = DynamixelController(follower_port, buadrate)
+                controller_leader = DynamixelController(leader_port, buadrate)
+
+                # ポートの設定
+                if not controller_follower.setup_port():
+                    sys.exit("フォロワーのポート設定に失敗しました。プログラムを終了します。")
+                if not controller_leader.setup_port():
+                    sys.exit("リーダーのポート設定に失敗しました。プログラムを終了します。")
+                controller_follower.enable_torque(follower_ids)
+
+                # リーダーをPWMモードに設定
+                ids = [6]
+                PWM_MODE = 16
+                controller_leader.set_operation_mode(ids, PWM_MODE)
+
+                # トルクを再度有効化する
+                controller_leader.enable_torque(ids)
+
+                # 設定したPWMが反映されるかを確認するためのデバッグ出力
+                goal_pwm = 200  # PWM値を調整
+                controller_leader.set_pwm(ids, [goal_pwm])
+
+                # コントローラーをリストに追加
+                controller_followers.append(controller_follower)
+                controller_leaders.append(controller_leader)
+
+
 
             # データ保存用のリストを定義
             data_storage_list = [{} for _ in range(num_pairs)]  # 各ペアのデータを保存する辞書のリスト
