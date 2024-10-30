@@ -16,7 +16,7 @@ def main():
 
     # コマンドライン引数の解析
     parser = argparse.ArgumentParser(description='Dynamixelサーボ用テレオペレーションスクリプト')
-    parser.add_argument('-pair', type=int, choices=[1, 2], default=2,
+    parser.add_argument('--pair', type=int, choices=[1, 2], default=2,
                         help='使用するサーボペアの数 (1または2)。デフォルトは2。')
     args = parser.parse_args()
     num_pairs = args.pair

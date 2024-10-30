@@ -20,11 +20,6 @@ import argparse  # コマンドライン引数を処理するために追加
 import constants  # constants.py をインポート
 import re  # 正規表現モジュールをインポート
 
-
-# 定数の設定
-BAUDRATE = 1000000  # 通信速度（ボーレート）
-# アドレス定義
-ADDR_XL_GOAL_POSITION = 116  # ゴールポジションのアドレス（使用しているモデルに応じて変更）
 # 動作モードの定数値
 CURRENT_CONTROL_MODE = 0
 VELOCITY_CONTROL_MODE = 1
@@ -73,7 +68,7 @@ def normalize_pos(value):
 def normalize_vel(value):
     return value * 3.14 / 2048
 
-def save_data(cap, arm_dim, dataset_dir, episode_len, episode_name, data_storage, camera_device_ids, camera_names, width, height, RECORD):
+def save_data(num_pairs, cap, total_arm_dim, dataset_dir, episode_len, episode_name, data_storage_list, camera_device_ids, camera_names, width, height, RECORD):
     """
     データを保存する関数。
 
@@ -100,9 +95,9 @@ def save_data(cap, arm_dim, dataset_dir, episode_len, episode_name, data_storage
         image = obs.create_group('images')
             
         # データセットの作成（固定サイズ、chunksとmaxshapeを指定しない）
-        dset_qpos = obs.create_dataset('qpos', (episode_len, arm_dim))
-        dset_qvel = obs.create_dataset('qvel', (episode_len, arm_dim))
-        dset_action = root.create_dataset('action', (episode_len, arm_dim))
+        dset_qpos = obs.create_dataset('qpos', (episode_len, total_arm_dim))
+        dset_qvel = obs.create_dataset('qvel', (episode_len, total_arm_dim))
+        dset_action = root.create_dataset('action', (episode_len, total_arm_dim))
 
 
         # 画像データセットの作成
@@ -135,21 +130,25 @@ def save_data(cap, arm_dim, dataset_dir, episode_len, episode_name, data_storage
 
                     # サーボのデータを取得
                     positions = []
-                    velocities = []  # 速度データ用のリスト
+                    velocities = []
                     actions = []
-                    for key in sorted(data_storage.keys()):
-                        value = data_storage[key]
-                        position_value = normalize_pos(value['position'])
-                        velocity_value = normalize_vel(value['velocity'])
-                        positions.append(position_value)
-                        velocities.append(velocity_value)
-                        action_value = normalize_pos(value['position'])
-                        actions.append(action_value)
+
+                    for pair_index in range(num_pairs):
+                        data_storage = data_storage_list[pair_index]
+                        # サーボIDの昇順にデータを取得
+                        for dxl_id in sorted(data_storage.keys()):
+                            value = data_storage[dxl_id]
+                            position_value = normalize_pos(value['position'])
+                            velocity_value = normalize_vel(value['velocity'])
+                            positions.append(position_value)
+                            velocities.append(velocity_value)
+                            action_value = normalize_pos(value['position'])
+                            actions.append(action_value)
 
                     # データが不足している場合は0で埋める
-                    positions = np.array(positions + [0] * (arm_dim - len(positions)))
-                    velocities = np.array(velocities + [0] * (arm_dim - len(velocities)))
-                    actions = np.array(actions + [0] * (arm_dim - len(actions)))
+                    positions = np.array(positions + [0] * (total_arm_dim - len(positions)))
+                    velocities = np.array(velocities + [0] * (total_arm_dim - len(velocities)))
+                    actions = np.array(actions + [0] * (total_arm_dim - len(actions)))
 
                     # データセットのサイズを拡張
                     new_size = i + 1
@@ -187,7 +186,7 @@ def save_data(cap, arm_dim, dataset_dir, episode_len, episode_name, data_storage
                 pass
 
 
-def run_sync_device(controller_leader1, controller_follower1, leader_ids, follower_ids):
+def run_sync_device(num_pairs, controller_leaders, controller_followers, leader_ids, follower_ids, data_storage_list):
     global data_storage
 
     # 各サーボのtqdmインスタンスを保持する辞書
@@ -231,76 +230,77 @@ def run_sync_device(controller_leader1, controller_follower1, leader_ids, follow
 
     while not terminate_event.is_set():
         try:
-            # リーダーサーボからデータを読み取る
-            results_leader = controller_leader1.sync_read_data(leader_ids)
-            if not results_leader:
-                tqdm.write(" [Leader ARM] リーダーのデータ読み取りに失敗しました。")
-                return
+            for pair_index in range(num_pairs):
+                # リーダーサーボからデータを読み取る
+                results_leader = controller_leaders[pair_index].sync_read_data(leader_ids)
+                if not results_leader:
+                    tqdm.write(" [Leader ARM] リーダーのデータ読み取りに失敗しました。")
+                    return
 
-            # フォロワーサーボからデータを読み取る
-            results_follower = controller_follower1.sync_read_data(follower_ids)
-            if not results_follower:
-                tqdm.write(" [Follower ARM] フォロワーのデータ読み取りに失敗しました。")
-                return
+                # フォロワーサーボからデータを読み取る
+                results_follower = controller_followers[pair_index].sync_read_data(follower_ids)
+                if not results_follower:
+                    tqdm.write(" [Follower ARM] フォロワーのデータ読み取りに失敗しました。")
+                    return
 
-            torque_over = [False] * arm_dim
-            for i, dxl_id in enumerate(follower_ids):
-                data = results_follower[dxl_id]
-                load = data['load']
-                if load > 500 or load < -500:
-                    torque_over[i] = True
-                velocity = data['velocity']
-                position = data['position']
-                label = "[Follower]"
-                
-            # リーダーの位置データを取得
-            goal_positions = [results_leader[dxl_id]['position'] for dxl_id in leader_ids]
+                torque_over = [False] * arm_dim
+                for i, dxl_id in enumerate(follower_ids):
+                    data = results_follower[dxl_id]
+                    load = data['load']
+                    if load > 500 or load < -500:
+                        torque_over[i] = True
+                    velocity = data['velocity']
+                    position = data['position']
+                    label = "[Follower]"
+                    
+                # リーダーの位置データを取得
+                goal_positions = [results_leader[dxl_id]['position'] for dxl_id in leader_ids]
 
-            # 必要に応じてマッピングや制限を適用
-            mapped_positions = []
-            for i, position in enumerate(goal_positions):
-                # 値を範囲内に制限
-                new_pos = max(0, min(position, 4095))
-                # Torque overになっている場合はPositionを更新しない
-                if torque_over[i]:
-                    new_pos = results_follower[i+1]['position']  
-                mapped_positions.append(new_pos)
+                # 必要に応じてマッピングや制限を適用
+                mapped_positions = []
+                for i, position in enumerate(goal_positions):
+                    # 値を範囲内に制限
+                    new_pos = max(0, min(position, 4095))
+                    # Torque overになっている場合はPositionを更新しない
+                    if torque_over[i]:
+                        new_pos = results_follower[i+1]['position']  
+                    mapped_positions.append(new_pos)
 
 
-            # フォロワーサーボに新しいゴールポジションを送信
-            success = controller_follower1.sync_write_goal_position(
-                follower_ids,
-                mapped_positions,
-                ADDR_XL_GOAL_POSITION  # アドレスを指定
-            )
+                # フォロワーサーボに新しいゴールポジションを送信
+                success = controller_followers[pair_index].sync_write_goal_position(
+                    follower_ids,
+                    mapped_positions,
+                )
 
-            # データを保存し、表示を更新
-            for dxl_id in leader_ids:
-                data = results_leader[dxl_id]
-                load = data['load']
-                velocity = data['velocity']
-                position = data['position']
-                label = "[Leader]"
-                desc = f"{label:<12} ID: {dxl_id:<2} Load: {load:<10} Velocity: {velocity:<12} Position: {position:<5}"
-                servo_bars[('Leader', dxl_id)].set_description(desc)
-                servo_bars[('Leader', dxl_id)].refresh()
+                # データを保存し、表示を更新
+                for dxl_id in leader_ids:
+                    data = results_leader[dxl_id]
+                    load = data['load']
+                    velocity = data['velocity']
+                    position = data['position']
+                    label = "[Leader]"
+                    desc = f"{label:<12} ID: {dxl_id:<2} Load: {load:<10} Velocity: {velocity:<12} Position: {position:<5}"
+                    servo_bars[('Leader', dxl_id)].set_description(desc)
+                    servo_bars[('Leader', dxl_id)].refresh()
 
-            # 区切り線は固定なので更新不要
-
-            for dxl_id in follower_ids:
-                data = results_follower[dxl_id]
-                load = data['load']
-                velocity = data['velocity']
-                position = data['position']
-                label = "[Follower]"
-                desc = f"{label:<12} ID: {dxl_id:<2} Load: {load:<10} Velocity: {velocity:<12} Position: {position:<5}"
-                servo_bars[('Follower', dxl_id)].set_description(desc)
-                servo_bars[('Follower', dxl_id)].refresh()
                 # データを保存
-                data_storage[dxl_id] = {'position': position, 'velocity': velocity, 'load': load}
+                data_storage = data_storage_list[pair_index]
+                for dxl_id in follower_ids:
+                    data = results_follower[dxl_id]
+                    data_storage[dxl_id] = {
+                        'position': data['position'],
+                        'velocity': data['velocity'],
+                        'load': data['load']
+                    }
+                    label = "[Follower]"
+                    desc = f"{label:<12} ID: {dxl_id:<2} Load: {load:<10} Velocity: {velocity:<12} Position: {position:<5}"
+                    servo_bars[('Follower', dxl_id)].set_description(desc)
+                    servo_bars[('Follower', dxl_id)].refresh()
+                    # データを保存
 
-            if not success:
-                tqdm.write("サーボへの値の反映に失敗しました。")
+                if not success:
+                    tqdm.write("サーボへの値の反映に失敗しました。")
 
         except Exception as e:
             tqdm.write(f"予期しないエラーが発生しました: {e}")
@@ -376,7 +376,10 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Record Episode Script')
     parser.add_argument('--task', type=str, required=True, help='Task name (e.g., sort)')
     parser.add_argument('--num', type=int, default=1, help='Number of episodes to record')
+    parser.add_argument('--pair', type=int, choices=[1, 2], default=2,
+                        help='使用するサーボペアの数 (1または2)。デフォルトは2。')
     args = parser.parse_args()
+    num_pairs = args.pair
 
     # タスク設定を取得
     task_name = args.task
@@ -384,6 +387,7 @@ if __name__ == "__main__":
         print(f"エラー: タスク '{task_name}' は constants.py に定義されていません。")
         sys.exit(1)
     task_config = constants.TASK_CONFIGS[task_name]
+    buadrate = constants.BAUDRATE
 
     arm_dim = task_config['arm_dim']
     dataset_dir = task_config['dataset_dir']
@@ -394,27 +398,46 @@ if __name__ == "__main__":
     height = task_config.get('height', 480) 
     num_episodes = args.num  # 繰り返す回数
 
-    DEVICENAME_FOLLOWER1 =  constants.FOLLOWER1 # フォロワー1のデバイス名（Windowsでは大文字に注意）
-    DEVICENAME_LEADER1 = constants.LEADER1    # リーダー1のデバイス名
-
-
     # サーボIDの設定
-    follower1_ids = list(range(1, arm_dim + 1))  # 1からarm_dimまでのフォロワーID
-    leader1_ids = list(range(1, arm_dim + 1))    # 1からarm_dimまでのリーダーID
+    follower_ids = list(range(1, arm_dim + 1))  # 1からarm_dimまでのフォロワーID
+    leader_ids = list(range(1, arm_dim + 1))    # 1からarm_dimまでのリーダーID
 
-    # フォロワーサーボの初期ゴールポジション
-    initial_goal_positions = [2047] * arm_dim
-
-    # コントローラインスタンスの作成
-    controller_follower = DynamixelController(DEVICENAME_FOLLOWER1, BAUDRATE)
-    controller_leader = DynamixelController(DEVICENAME_LEADER1, BAUDRATE)
+    # コントローラーのインスタンス作成
+    controller_followers = []
+    controller_leaders = []
     terminate_event = threading.Event()  # スレッドの終了を通知するイベント
 
-    # ポートの設定を試みる
-    if not controller_follower.setup_port():
-        sys.exit("フォロワーのポート設定に失敗しました。プログラムを終了します。")
-    if not controller_leader.setup_port():
-        sys.exit("リーダーのポート設定に失敗しました。プログラムを終了します。")
+
+    # 各ペアのコントローラーを設定
+    for pair_index in range(num_pairs):
+        follower_port = getattr(constants, f'FOLLOWER{pair_index}')
+        leader_port = getattr(constants, f'LEADER{pair_index}')
+
+        controller_follower = DynamixelController(follower_port, buadrate)
+        controller_leader = DynamixelController(leader_port, buadrate)
+
+        # ポートの設定
+        if not controller_follower.setup_port():
+            sys.exit("フォロワーのポート設定に失敗しました。プログラムを終了します。")
+        if not controller_leader.setup_port():
+            sys.exit("リーダーのポート設定に失敗しました。プログラムを終了します。")
+        controller_follower.enable_torque(follower_ids)
+
+        # リーダーをPWMモードに設定
+        ids = [6]
+        PWM_MODE = 16
+        controller_leader.set_operation_mode(ids, PWM_MODE)
+
+        # トルクを再度有効化する
+        controller_leader.enable_torque(ids)
+
+        # 設定したPWMが反映されるかを確認するためのデバッグ出力
+        goal_pwm = 200  # PWM値を調整
+        controller_leader.set_pwm(ids, [goal_pwm])
+
+        # コントローラーをリストに追加
+        controller_followers.append(controller_follower)
+        controller_leaders.append(controller_leader)
 
     # 利用可能なカメラデバイスIDを確認
     print("カメラをチェックします...")
@@ -422,8 +445,6 @@ if __name__ == "__main__":
     print("利用可能なカメラデバイスID:", available_cameras)
 
     # カメラデバイスIDを指定（必要に応じて変更）
-   
-
     print(f"カメラデバイスの初期化: {camera_device_ids}, {camera_names}")
     cameras = {}
     for device_id in camera_device_ids:
@@ -435,8 +456,13 @@ if __name__ == "__main__":
 
     try:
         for episode in range(num_episodes):
-            # データ保存用の辞書
-            data_storage = {}
+
+            # データ保存用のリストを定義
+            data_storage_list = [{} for _ in range(num_pairs)]  # 各ペアのデータを保存する辞書のリスト
+
+            # 全体のアーム次元数を計算
+            total_arm_dim = arm_dim * num_pairs
+
             RECORD = True
 
             # エピソード番号を取得
@@ -445,62 +471,33 @@ if __name__ == "__main__":
 
             print(f"エピソード {episode + 1}/{num_episodes} を収集します。エピソード番号: {episode_name}")
 
-            controller_follower.set_operation_mode(follower1_ids, POSITION_CONTROL_MODE)
-
-            # フォロワーのサーボのトルクを有効化
-            controller_follower.enable_torque(follower1_ids)
-
-            # フォロワーサーボの初期位置を設定
-            success = controller_follower.sync_write_goal_position(
-                follower1_ids,
-                initial_goal_positions,
-                ADDR_XL_GOAL_POSITION  # アドレスを指定
-            )
-            if success:
-                print("サーボへの初期値の反映に成功しました。")
-            else:
-                print("サーボへの初期値の反映に失敗しました。")
-
-            controller_leader.set_operation_mode(leader1_ids, POSITION_CONTROL_MODE)
-
-            # リーダーのサーボの動作モードを設定
-            ids = [arm_dim]  # 操作するサーボのIDリスト
-            PWM_MODE = 16  # PWMモードの定数
-            controller_leader.set_operation_mode(ids, PWM_MODE)
-
-            # トルクを再度有効化
-            controller_leader.enable_torque(ids)
-
-            # デバッグ用にPWM値を設定してみる
-            goal_pwm = 200  # PWMの目標値
-            controller_leader.set_pwm(ids, [goal_pwm])
-
             # 終了イベントをクリア
             terminate_event.clear()
 
             # データ保存用のスレッドを作成
             data_thread = threading.Thread(
                 target=save_data,
-                args=(cameras, arm_dim, dataset_dir, episode_len, episode_name, data_storage, camera_device_ids, camera_names, width, height, RECORD)
+                args=(num_pairs, cameras, total_arm_dim, dataset_dir, episode_len, episode_name, data_storage_list, camera_device_ids, camera_names, width, height, RECORD)
             )
 
             # デバイス同期用のスレッドを作成
-            thread1 = threading.Thread(
+            controll_thread = threading.Thread(
                 target=run_sync_device,
-                args=(controller_leader, controller_follower, leader1_ids, follower1_ids)
+                args=(num_pairs, controller_leaders, controller_followers, leader_ids, follower_ids, data_storage_list)
             )
 
             # スレッドを開始
             data_thread.start()
-            thread1.start()
+            controll_thread.start()
 
             # スレッドの終了を待機
-            thread1.join()
+            controll_thread.join()
             data_thread.join()
 
-            # トルクを無効化
-            controller_follower.disable_torque(follower1_ids)
-            controller_leader.disable_torque(leader1_ids)
+            for pair_index in range(num_pairs):
+                # 終了前にトルクを無効化
+                controller_followers[pair_index].disable_torque(follower_ids)
+                controller_leaders[pair_index].disable_torque(leader_ids)
 
             print(f"エピソード {episode + 1}/{num_episodes} の収集が完了しました。")
 
