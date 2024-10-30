@@ -5,10 +5,12 @@ import pathlib
 ### Task parameters
 DATA_DIR = './data'  # データフォルダを指定
 
-LEADER1 = "COM16"
-FOLLOWER1 = "COM14"
-#FOLLOWER1 = "/dev/tty.usbserial-FT94THS7"
-#LEADER1 = "/dev/tty.usbserial-FT94VTRV"
+# ポートを指定
+LEADER0 = "COM4"
+FOLLOWER0 = "COM7"
+LEADER1 = "COM3"
+FOLLOWER1 = "COM6"
+
 ARM_DIM = 6
 
 LEADER2 = ''
