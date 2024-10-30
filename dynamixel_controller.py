@@ -134,7 +134,7 @@ class DynamixelController:
                     else:
                         print(f"ID {dxl_id} のモード設定が反映されていません。")
 
-    def sync_write_goal_position(self, ids, goal_positions, address, data_length=4):
+    def sync_write_goal_position(self, ids, goal_positions, address=ADDR_XL_GOAL_POSITION, data_length=4):
         with port_lock:
             group_sync_write = GroupSyncWrite(self.portHandler, self.packetHandler, address, data_length)
             for i, dxl_id in enumerate(ids):
@@ -263,3 +263,8 @@ class DynamixelController:
                     print(f"ID {dxl_id} の速度設定中にエラーが発生しました: {self.packetHandler.getRxPacketError(dxl_error)}")
                 else:
                     print(f"ID: {dxl_id} の速度を {goal_velocity} に設定しました。")
+
+    def close_port(self):
+        with port_lock:
+            self.portHandler.closePort()
+            print(f"ポート {self.device_name} を閉じました。")
