@@ -94,4 +94,8 @@ python movie.py --task test1 --name episode_10.hdf5
 
 ```
 python train.py --task test1 --num_epocs 2000
-``` 
+```
+
+|GPU|学習時間目安(2画像)|
+|---|---|
+|RTX6000 Ada| 3時間 |
