@@ -87,3 +87,11 @@ python movie.py --task test1
 ```
 python movie.py --task test1 --name episode_10.hdf5
 ```
+
+## 学習
+
+収集したデータをnum_epocsで学習
+
+```
+python train.py --task test1 --num_epocs 2000
+``` 
