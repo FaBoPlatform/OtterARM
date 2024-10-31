@@ -510,7 +510,7 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print("プログラムが中断されました。終了します...")
         terminate_event.set()
-        thread1.join()
+        thread.join()
         data_thread.join()
         # トルクを無効化
         controller_follower.disable_torque(follower1_ids)
