@@ -67,12 +67,12 @@ def get_args_parser():
     return parser
 
 
-def build_ACT_model_and_optimizer(args_override):
-    parser = argparse.ArgumentParser('DETR training and evaluation script', parents=[get_args_parser()])
-    args = parser.parse_args()
+def build_ACT_model_and_optimizer(args):
+    #parser = argparse.ArgumentParser('DETR training and evaluation script', parents=[get_args_parser()])
+    #args = parser.parse_args()
 
-    for k, v in args_override.items():
-        setattr(args, k, v)
+    #for k, v in args_override.items():
+    #    setattr(args, k, v)
 
     model = build_ACT_model(args)
     model.cuda()
@@ -90,12 +90,12 @@ def build_ACT_model_and_optimizer(args_override):
     return model, optimizer
 
 
-def build_CNNMLP_model_and_optimizer(args_override):
-    parser = argparse.ArgumentParser('DETR training and evaluation script', parents=[get_args_parser()])
-    args = parser.parse_args()
+def build_CNNMLP_model_and_optimizer(args):
+    #parser = argparse.ArgumentParser('DETR training and evaluation script', parents=[get_args_parser()])
+    #args = parser.parse_args()
 
-    for k, v in args_override.items():
-        setattr(args, k, v)
+    #for k, v in args_override.items():
+    #    setattr(args, k, v)
 
     model = build_CNNMLP_model(args)
     model.cuda()

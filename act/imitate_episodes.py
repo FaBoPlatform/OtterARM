@@ -8,15 +8,15 @@ from copy import deepcopy
 from tqdm import tqdm
 from einops import rearrange
 
-from constants import DT
-from constants import PUPPET_GRIPPER_JOINT_OPEN
-from utils import load_data # data functions
-from utils import sample_box_pose, sample_insertion_pose # robot functions
-from utils import compute_dict_mean, set_seed, detach_dict # helper functions
-from policy import ACTPolicy, CNNMLPPolicy
-from visualize_episodes import save_videos
+#from constants import DT
+#from constants import PUPPET_GRIPPER_JOINT_OPEN
+from act.utils import load_data # data functions
+from act.utils import sample_box_pose, sample_insertion_pose # robot functions
+from act.utils import compute_dict_mean, set_seed, detach_dict # helper functions
+from act.policy import ACTPolicy, CNNMLPPolicy
+#from act.visualize_episodes import save_videos
 
-from sim_env import BOX_POSE
+#from sim_env import BOX_POSE
 
 import IPython
 e = IPython.embed
@@ -35,12 +35,16 @@ def main(args):
 
     # get task parameters
     is_sim = task_name[:4] == 'sim_'
-    if is_sim:
-        from constants import SIM_TASK_CONFIGS
-        task_config = SIM_TASK_CONFIGS[task_name]
-    else:
-        from aloha_scripts.constants import TASK_CONFIGS
-        task_config = TASK_CONFIGS[task_name]
+    #if is_sim:
+    #    from constants import SIM_TASK_CONFIGS
+    #    task_config = SIM_TASK_CONFIGS[task_name]
+    #else:
+    #    from aloha_scripts.constants import TASK_CONFIGS
+    #    task_config = TASK_CONFIGS[task_name]
+    
+    # constants.pyから各種設定値を読み出し
+    from constants import TASK_CONFIGS
+    task_config = TASK_CONFIGS[task_name]
     dataset_dir = task_config['dataset_dir']
     num_episodes = task_config['num_episodes']
     episode_len = task_config['episode_len']
@@ -201,10 +205,10 @@ def eval_bc(config, ckpt_name, save_episode=True):
     for rollout_id in range(num_rollouts):
         rollout_id += 0
         ### set task
-        if 'sim_transfer_cube' in task_name:
-            BOX_POSE[0] = sample_box_pose() # used in sim reset
-        elif 'sim_insertion' in task_name:
-            BOX_POSE[0] = np.concatenate(sample_insertion_pose()) # used in sim reset
+        #if 'sim_transfer_cube' in task_name:
+        #    BOX_POSE[0] = sample_box_pose() # used in sim reset
+        #elif 'sim_insertion' in task_name:
+        #    BOX_POSE[0] = np.concatenate(sample_insertion_pose()) # used in sim reset
 
         ts = env.reset()
 
@@ -229,7 +233,7 @@ def eval_bc(config, ckpt_name, save_episode=True):
                 if onscreen_render:
                     image = env._physics.render(height=480, width=640, camera_id=onscreen_cam)
                     plt_img.set_data(image)
-                    plt.pause(DT)
+                    #plt.pause(DT)
 
                 ### process previous timestep to get qpos and image_list
                 obs = ts.observation
@@ -279,7 +283,7 @@ def eval_bc(config, ckpt_name, save_episode=True):
 
             plt.close()
         if real_robot:
-            move_grippers([env.puppet_bot_left, env.puppet_bot_right], [PUPPET_GRIPPER_JOINT_OPEN] * 2, move_time=0.5)  # open
+            #move_grippers([env.puppet_bot_left, env.puppet_bot_right], [PUPPET_GRIPPER_JOINT_OPEN] * 2, move_time=0.5)  # open
             pass
 
         rewards = np.array(rewards)
@@ -289,8 +293,8 @@ def eval_bc(config, ckpt_name, save_episode=True):
         highest_rewards.append(episode_highest_reward)
         print(f'Rollout {rollout_id}\n{episode_return=}, {episode_highest_reward=}, {env_max_reward=}, Success: {episode_highest_reward==env_max_reward}')
 
-        if save_episode:
-            save_videos(image_list, DT, video_path=os.path.join(ckpt_dir, f'video{rollout_id}.mp4'))
+        #if save_episode:
+        #    save_videos(image_list, DT, video_path=os.path.join(ckpt_dir, f'video{rollout_id}.mp4'))
 
     success_rate = np.mean(np.array(highest_rewards) == env_max_reward)
     avg_return = np.mean(episode_returns)

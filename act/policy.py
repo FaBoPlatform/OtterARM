@@ -1,15 +1,82 @@
 import torch.nn as nn
 from torch.nn import functional as F
 import torchvision.transforms as transforms
+import argparse
 
 from detr.main import build_ACT_model_and_optimizer, build_CNNMLP_model_and_optimizer
 import IPython
 e = IPython.embed
 
+# 追加
+def get_args_parser():
+    parser = argparse.ArgumentParser('DETR training and evaluation script', add_help=False)
+    # 学習パラメータ
+    parser.add_argument('--lr', default=1e-4, type=float)  # 上書きされる
+    parser.add_argument('--lr_backbone', default=1e-5, type=float)  # 上書きされる
+    parser.add_argument('--batch_size', default=2, type=int)  # 使用されない
+    parser.add_argument('--weight_decay', default=1e-4, type=float)
+    parser.add_argument('--epochs', default=300, type=int)  # 使用されない
+    parser.add_argument('--lr_drop', default=200, type=int)  # 使用されない
+    parser.add_argument('--clip_max_norm', default=0.1, type=float,  # 使用されない
+                        help='gradient clipping max norm')
+
+    # モデルパラメータ
+    # * Backbone
+    parser.add_argument('--backbone', default='resnet18', type=str,  # 上書きされる
+                        help="Name of the convolutional backbone to use")
+    parser.add_argument('--dilation', action='store_true', default=False,
+                        help="If true, we replace stride with dilation in the last convolutional block (DC5)")
+    parser.add_argument('--position_embedding', default='sine', type=str, choices=('sine', 'learned'),
+                        help="Type of positional embedding to use on top of the image features")
+    parser.add_argument('--camera_names', default=[], type=list,  # 上書きされる
+                        help="A list of camera names")
+
+    # * Transformer
+    parser.add_argument('--enc_layers', default=4, type=int,  # 上書きされる
+                        help="Number of encoding layers in the transformer")
+    parser.add_argument('--dec_layers', default=6, type=int,  # 上書きされる
+                        help="Number of decoding layers in the transformer")
+    parser.add_argument('--dim_feedforward', default=2048, type=int,  # 上書きされる
+                        help="Intermediate size of the feedforward layers in the transformer blocks")
+    parser.add_argument('--hidden_dim', default=256, type=int,  # 上書きされる
+                        help="Size of the embeddings (dimension of the transformer)")
+    parser.add_argument('--dropout', default=0.1, type=float,
+                        help="Dropout applied in the transformer")
+    parser.add_argument('--nheads', default=8, type=int,  # 上書きされる
+                        help="Number of attention heads inside the transformer's attentions")
+    parser.add_argument('--num_queries', default=400, type=int,  # 上書きされる
+                        help="Number of query slots")
+    parser.add_argument('--pre_norm', action='store_true')
+
+    # * Segmentation
+    parser.add_argument('--masks', action='store_true', default=False,
+                        help="Train segmentation head if the flag is provided")
+
+    # 他の必要な引数を追加
+    # repeat args in imitate_episodes just to avoid error. Will not be used
+    parser.add_argument('--eval', action='store_true')
+    parser.add_argument('--onscreen_render', action='store_true')
+    parser.add_argument('--ckpt_dir', default='checkpoint', type=str, help='ckpt_dir')
+    parser.add_argument('--policy_class', default='ACT', type=str, help='policy_class, capitalize')
+    parser.add_argument('--task_name', default='default_task', type=str, help='task_name')
+    parser.add_argument('--seed', default=0, type=int, help='seed')
+    parser.add_argument('--num_epochs', default=100, type=int, help='num_epochs')
+    parser.add_argument('--kl_weight', default=1, type=int, help='KL Weight')
+    parser.add_argument('--chunk_size', default=100, type=int, help='chunk_size')
+    parser.add_argument('--temporal_agg', action='store_true')
+
+    return parser
+
 class ACTPolicy(nn.Module):
     def __init__(self, args_override):
         super().__init__()
-        model, optimizer = build_ACT_model_and_optimizer(args_override)
+        
+        # train.pyからも呼び出せるように、detr/main.py の get_args_parser を使用して args を取得
+        args = get_args_parser().parse_args([])
+        for k, v in args_override.items():
+            setattr(args, k, v)
+        model, optimizer = build_ACT_model_and_optimizer(args)
+
         self.model = model # CVAE decoder
         self.optimizer = optimizer
         self.kl_weight = args_override['kl_weight']
@@ -44,7 +111,13 @@ class ACTPolicy(nn.Module):
 class CNNMLPPolicy(nn.Module):
     def __init__(self, args_override):
         super().__init__()
-        model, optimizer = build_CNNMLP_model_and_optimizer(args_override)
+
+        # train.pyからも呼び出せるように、detr/main.py の get_args_parser を使用して args を取得
+        args = get_args_parser().parse_args([])
+        for k, v in args_override.items():
+            setattr(args, k, v)
+        model, optimizer = build_CNNMLP_model_and_optimizer(args)
+        
         self.model = model # decoder
         self.optimizer = optimizer
 
