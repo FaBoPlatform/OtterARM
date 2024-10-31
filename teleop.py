@@ -11,7 +11,7 @@ import constants
 import argparse
 
 def main():
-    # 定数
+    # 転送速度
     buadrate = constants.BAUDRATE
 
     # コマンドライン引数の解析
