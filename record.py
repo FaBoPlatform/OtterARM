@@ -68,7 +68,7 @@ def normalize_pos(value):
 def normalize_vel(value):
     return value * 3.14 / 2048
 
-def save_data(num_pairs, cap, total_arm_dim, dataset_dir, episode_len, episode_name, data_storage_list, camera_device_ids, camera_names, width, height, RECORD):
+def save_data(num_pairs, cap, total_state_dim, dataset_dir, episode_len, episode_name, data_storage_list, camera_device_ids, camera_names, width, height, RECORD):
     """
     データを保存する関数。
 
@@ -95,9 +95,9 @@ def save_data(num_pairs, cap, total_arm_dim, dataset_dir, episode_len, episode_n
         image = obs.create_group('images')
             
         # データセットの作成（固定サイズ、chunksとmaxshapeを指定しない）
-        dset_qpos = obs.create_dataset('qpos', (episode_len, total_arm_dim))
-        dset_qvel = obs.create_dataset('qvel', (episode_len, total_arm_dim))
-        dset_action = root.create_dataset('action', (episode_len, total_arm_dim))
+        dset_qpos = obs.create_dataset('qpos', (episode_len, total_state_dim))
+        dset_qvel = obs.create_dataset('qvel', (episode_len, total_state_dim))
+        dset_action = root.create_dataset('action', (episode_len, total_state_dim))
 
 
         # 画像データセットの作成
@@ -146,9 +146,9 @@ def save_data(num_pairs, cap, total_arm_dim, dataset_dir, episode_len, episode_n
                             actions.append(action_value)
 
                     # データが不足している場合は0で埋める
-                    positions = np.array(positions + [0] * (total_arm_dim - len(positions)))
-                    velocities = np.array(velocities + [0] * (total_arm_dim - len(velocities)))
-                    actions = np.array(actions + [0] * (total_arm_dim - len(actions)))
+                    positions = np.array(positions + [0] * (total_state_dim - len(positions)))
+                    velocities = np.array(velocities + [0] * (total_state_dim - len(velocities)))
+                    actions = np.array(actions + [0] * (total_state_dim - len(actions)))
 
                     # データセットのサイズを拡張
                     new_size = i + 1
@@ -243,7 +243,7 @@ def run_sync_device(num_pairs, controller_leaders, controller_followers, leader_
                     tqdm.write(" [Follower ARM] フォロワーのデータ読み取りに失敗しました。")
                     return
 
-                torque_over = [False] * arm_dim
+                torque_over = [False] * state_dim
                 for i, dxl_id in enumerate(follower_ids):
                     data = results_follower[dxl_id]
                     load = data['load']
@@ -376,10 +376,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Record Episode Script')
     parser.add_argument('--task', type=str, required=True, help='Task name (e.g., sort)')
     parser.add_argument('--num', type=int, default=1, help='Number of episodes to record')
-    parser.add_argument('--pair', type=int, choices=[1, 2], default=2,
                         help='使用するサーボペアの数 (1または2)。デフォルトは2。')
     args = parser.parse_args()
-    num_pairs = args.pair
+    num_pairs = constants.PAIR
 
     # タスク設定を取得
     task_name = args.task
@@ -389,7 +388,7 @@ if __name__ == "__main__":
     task_config = constants.TASK_CONFIGS[task_name]
     buadrate = constants.BAUDRATE
 
-    arm_dim = task_config['arm_dim']
+    state_dim = constants.STATE_DIM
     dataset_dir = task_config['dataset_dir']
     episode_len = task_config['episode_len']
     camera_names = task_config.get('camera_names', ['high'])  # デフォルトで 'high' を使用
@@ -399,8 +398,8 @@ if __name__ == "__main__":
     num_episodes = args.num  # 繰り返す回数
 
     # サーボIDの設定
-    follower_ids = list(range(1, arm_dim + 1))  # 1からarm_dimまでのフォロワーID
-    leader_ids = list(range(1, arm_dim + 1))    # 1からarm_dimまでのリーダーID
+    follower_ids = list(range(1, state_dim + 1))  # 1からstate_dimまでのフォロワーID
+    leader_ids = list(range(1, state_dim + 1))    # 1からstate_dimまでのリーダーID
     terminate_event = threading.Event()  # スレッドの終了を通知するイベント
 
     # 利用可能なカメラデバイスIDを確認
@@ -463,7 +462,7 @@ if __name__ == "__main__":
             data_storage_list = [{} for _ in range(num_pairs)]  # 各ペアのデータを保存する辞書のリスト
 
             # 全体のアーム次元数を計算
-            total_arm_dim = arm_dim * num_pairs
+            total_state_dim = state_dim * num_pairs
 
             RECORD = True
 
@@ -479,7 +478,7 @@ if __name__ == "__main__":
             # データ保存用のスレッドを作成
             data_thread = threading.Thread(
                 target=save_data,
-                args=(num_pairs, cameras, total_arm_dim, dataset_dir, episode_len, episode_name, data_storage_list, camera_device_ids, camera_names, width, height, RECORD)
+                args=(num_pairs, cameras, total_state_dim, dataset_dir, episode_len, episode_name, data_storage_list, camera_device_ids, camera_names, width, height, RECORD)
             )
 
             # デバイス同期用のスレッドを作成

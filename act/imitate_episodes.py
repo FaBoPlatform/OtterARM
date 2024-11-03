@@ -43,7 +43,7 @@ def main(args):
     #    task_config = TASK_CONFIGS[task_name]
     
     # constants.pyから各種設定値を読み出し
-    from constants import TASK_CONFIGS
+    from constants import TASK_CONFIGS, STATE_DIM
     task_config = TASK_CONFIGS[task_name]
     dataset_dir = task_config['dataset_dir']
     num_episodes = task_config['num_episodes']
@@ -51,7 +51,7 @@ def main(args):
     camera_names = task_config['camera_names']
 
     # fixed parameters
-    state_dim = 14
+    state_dim = STATE_DIM
     lr_backbone = 1e-5
     backbone = 'resnet18'
     if policy_class == 'ACT':

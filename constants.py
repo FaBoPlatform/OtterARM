@@ -13,24 +13,24 @@ FOLLOWER1 = "COM6"
 
 BAUDRATE = 1000000
 
-ARM_DIM = 6
+# アームのペア数とアームの関節数
+PAIR = 2
+STATE_DIM = 6
 
 TASK_CONFIGS = {
     'test1': {
         'dataset_dir': DATA_DIR + '/test1',
-        'episode_len': 200,  # ここでエピソードの長さを指定
-        'num_episodes': 18,  # ここでエピソードの回数を指定
+        'episode_len': 200,
+        'num_episodes': 18,
         'camera_names': ['front','top'],
         'camera_device_ids': [0,1],
         'camera_port': [0,1],
-        'arm_dim': 6,
         'width': 320,
         'height': 240,
     },
 }
 
-
-DEFAULT_ARGS = {
+TRAIN_CONFIG = {
     'ckpt_dir': 'checkpoint',
     'policy_class': 'ACT',
     'kl_weight': 10,

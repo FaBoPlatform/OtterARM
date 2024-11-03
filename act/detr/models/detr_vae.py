@@ -1,4 +1,4 @@
-# Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+ Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
 """
 DETR model and criterion classes.
 """
@@ -55,19 +55,19 @@ class DETRVAE(nn.Module):
         if backbones is not None:
             self.input_proj = nn.Conv2d(backbones[0].num_channels, hidden_dim, kernel_size=1)
             self.backbones = nn.ModuleList(backbones)
-            self.input_proj_robot_state = nn.Linear(6, hidden_dim)
+            self.input_proj_robot_state = nn.Linear(state_dim, hidden_dim)
         else:
             # input_dim = 14 + 7 # robot_state + env_state
-            self.input_proj_robot_state = nn.Linear(6, hidden_dim)
-            self.input_proj_env_state = nn.Linear(6, hidden_dim)
+            self.input_proj_robot_state = nn.Linear(state_dim, hidden_dim)
+            self.input_proj_env_state = nn.Linear(state_dim/2, hidden_dim)
             self.pos = torch.nn.Embedding(2, hidden_dim)
             self.backbones = None
 
         # encoder extra parameters
         self.latent_dim = 32 # final size of latent z # TODO tune
         self.cls_embed = nn.Embedding(1, hidden_dim) # extra cls token embedding
-        self.encoder_action_proj = nn.Linear(6, hidden_dim) # project action to embedding
-        self.encoder_joint_proj = nn.Linear(6, hidden_dim)  # project qpos to embedding
+        self.encoder_action_proj = nn.Linear(state_dim, hidden_dim) # project action to embedding
+        self.encoder_joint_proj = nn.Linear(state_dim, hidden_dim)  # project qpos to embedding
         self.latent_proj = nn.Linear(hidden_dim, self.latent_dim*2) # project hidden state to latent std, var
         self.register_buffer('pos_table', get_sinusoid_encoding_table(1+1+num_queries, hidden_dim)) # [CLS], qpos, a_seq
 
@@ -166,7 +166,7 @@ class CNNMLP(nn.Module):
                 backbone_down_projs.append(down_proj)
             self.backbone_down_projs = nn.ModuleList(backbone_down_projs)
 
-            mlp_in_dim = 768 * len(backbones) + 6
+            mlp_in_dim = 768 * len(backbones) + state_dim
             self.mlp = mlp(input_dim=mlp_in_dim, hidden_dim=1024, output_dim=6, hidden_depth=2)
         else:
             raise NotImplementedError
@@ -227,7 +227,8 @@ def build_encoder(args):
 
 
 def build(args):
-    state_dim = 6 # TODO hardcode
+    state_dim = args.state_dim  # 引数から取得
+    #state_dim = 6 # TODO hardcode
 
     # From state
     # backbone = None # from state for now, no need for conv nets
@@ -255,7 +256,8 @@ def build(args):
     return model
 
 def build_cnnmlp(args):
-    state_dim = 6 # TODO hardcode
+    state_dim = args.state_dim  # 引数から取得
+    #state_dim = 14 # TODO hardcode
 
     # From state
     # backbone = None # from state for now, no need for conv nets

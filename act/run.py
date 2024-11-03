@@ -104,12 +104,11 @@ def eval_bc(config, ckpt_name, save_episode=True):
     temporal_agg = config['temporal_agg']
     camera_device_ids = config['camera_device_ids']
     onscreen_cam = 'angle'
-
+    width = config['width']
+    height = config['height']
     # コントローラーのインスタンス作成
     controller_followers = []
     controller_leaders = []
-    width = 320
-    height = 240
     cameras = {}
     for device_id in camera_device_ids:
         cameras[device_id] = setup_camera(device_id, width, height)
@@ -117,7 +116,6 @@ def eval_bc(config, ckpt_name, save_episode=True):
             print(f"カメラ {device_id} (デバイスID: {device_id}) の初期化に失敗しました。")
         else:
             print(f"カメラ {device_id} (デバイスID: {device_id}) の初期化に成功しました。")
-
 
     # 各ペアのコントローラーを設定
     num_pairs = 1

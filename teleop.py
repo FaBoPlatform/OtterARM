@@ -16,15 +16,14 @@ def main():
 
     # コマンドライン引数の解析
     parser = argparse.ArgumentParser(description='Dynamixelサーボ用テレオペレーションスクリプト')
-    parser.add_argument('--pair', type=int, choices=[1, 2], default=2,
                         help='使用するサーボペアの数 (1または2)。デフォルトは2。')
     args = parser.parse_args()
-    num_pairs = args.pair
+    num_pairs = constants.PAIR
 
     # サーボIDの設定
-    arm_dim = constants.ARM_DIM
-    follower_ids = list(range(1, arm_dim + 1))  # フォロワーIDリスト
-    leader_ids = list(range(1, arm_dim + 1))    # リーダーIDリスト
+    state_dim = constants.STATE_DIM
+    follower_ids = list(range(1, state_dim + 1))  # フォロワーIDリスト
+    leader_ids = list(range(1, state_dim + 1))    # リーダーIDリスト
 
     # コントローラーのインスタンス作成
     controller_followers = []
@@ -71,7 +70,7 @@ def main():
                     # フォロワーサーボからデータを読み取る
                     results_follower = controller_followers[pair_index].sync_read_data(follower_ids)
 
-                    torque_over = [False] * arm_dim
+                    torque_over = [False] * state_dim
                     for i, dxl_id in enumerate(follower_ids):
                         data = results_follower[dxl_id]
                         load = data['load']

@@ -164,7 +164,7 @@ def main():
     qpos, qvel, action, images = read_hdf5_file(file_path)
 
     # 出力ビデオのパスを構築
-    output_dir = './mov'
+    output_dir = './mov/' + args.task + "/"
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
         print(f"Created output directory: {output_dir}")

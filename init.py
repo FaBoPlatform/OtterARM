@@ -5,14 +5,14 @@ import constants
 
 # Constants
 baudrate = constants.BAUDRATE
-arm_dim = constants.ARM_DIM
+state_dim = constants.STATE_DIM
 
 # サーボIDの設定
-follower1_ids = list(range(1, arm_dim + 1))  # 1からarm_dimまでのフォロワーID
-leader1_ids = list(range(1, arm_dim + 1))    # 1からarm_dimまでのリーダーID
+follower1_ids = list(range(1, state_dim + 1))  # 1からstate_dimまでのフォロワーID
+leader1_ids = list(range(1, state_dim + 1))    # 1からstate_dimまでのリーダーID
 
 # フォロワーサーボの初期ゴールポジション
-initial_goal_positions = [2047] * arm_dim
+initial_goal_positions = [2047] * state_dim
 
 # Create controller instances
 controller_follower = DynamixelController(constants.FOLLOWER1, baudrate)

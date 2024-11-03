@@ -65,6 +65,9 @@ def get_args_parser():
     parser.add_argument('--chunk_size', default=100, type=int, help='chunk_size')
     parser.add_argument('--temporal_agg', action='store_true')
 
+    # ロボットアームの関節数
+    parser.add_argument('--state_dim', default=6, type=int, help='state dimension (number of robot joints)')
+
     return parser
 
 class ACTPolicy(nn.Module):
