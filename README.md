@@ -66,38 +66,20 @@ cd detr && pip install -e .
 Single
 
 ```
-python teleop.py --pair 1
-```
-Double
-
-```
-python teleop.py --pair 2
+python teleop.py
 ```
 
 ## データセットの作成
 
-Single
+```
+python record.py --task test1
+```
 
-```
-python record.py --task test1 --pair 1
-```
-Double
-
-```
-python record.py --task test1 --pair 2
-```
 
 ## データセットの作成(連続)
 
-Single
-
 ```
-python record.py --task test1 --num 50 --pair 1
-```
-Double
-
-```
-python record.py --task test1 --num 50 --pair 2
+python record.py --task test1 --num 50
 ```
 
 ## 動画作成
@@ -125,3 +107,9 @@ python train.py --task test1 --num_epocs 2000
 |GPU|学習時間目安(長さ200,2画像)|
 |---|---|
 |RTX6000 Ada| 3時間 |
+
+## 実行
+
+```
+python run.py --task test1
+```
