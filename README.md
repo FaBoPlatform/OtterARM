@@ -38,8 +38,11 @@ Double
 ## 環境構築
 
 ```
-conda create -n aloha python=3.8.10
+conda create -n otter python=3.8.10
 conda activate otter
+```
+
+```
 pip install dynamixel-sdk
 pip install torchvision
 pip install torch
@@ -56,10 +59,6 @@ pip install packaging
 pip install h5py
 pip install ipython
 cd detr && pip install -e .
-```
-
-```
-conda activate otter
 ```
 
 ## テレオペ
