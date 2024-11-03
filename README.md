@@ -58,7 +58,7 @@ pip install einops
 pip install packaging
 pip install h5py
 pip install ipython
-cd detr && pip install -e .
+cd act/detr && pip install -e .
 ```
 
 ## テレオペ
