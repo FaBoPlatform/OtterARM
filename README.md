@@ -63,8 +63,6 @@ cd detr && pip install -e .
 
 ## テレオペ
 
-Single
-
 ```
 python teleop.py
 ```
