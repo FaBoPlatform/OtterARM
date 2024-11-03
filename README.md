@@ -12,7 +12,7 @@
 
 ### サードパーティライセンス
 
-- `./detr/` ディレクトリには、Apacheライセンス2.0の下で提供されているFacebookの[DETR](https://github.com/facebookresearch/detr)からのコードが含まれています。
+- `./act/detr/` ディレクトリには、Apacheライセンス2.0の下で提供されているFacebookの[DETR](https://github.com/facebookresearch/detr)からのコードが含まれています。
 - `./act/` ディレクトリには、MITライセンスの下で提供されているTony Z. Zhao氏の[ACT](https://github.com/tonyzhaozh/act)からのコードが含まれています。
 
 詳細は各ディレクトリ内の `LICENSE` ファイルを参照してください。
@@ -38,8 +38,11 @@ Double
 ## 環境構築
 
 ```
-conda create -n aloha python=3.8.10
+conda create -n otter python=3.8.10
 conda activate otter
+```
+
+```
 pip install dynamixel-sdk
 pip install torchvision
 pip install torch
@@ -58,47 +61,23 @@ pip install ipython
 cd detr && pip install -e .
 ```
 
-```
-conda activate otter
-```
-
 ## テレオペ
 
-Single
-
 ```
-python teleop.py --pair 1
-```
-Double
-
-```
-python teleop.py --pair 2
+python teleop.py
 ```
 
 ## データセットの作成
 
-Single
+```
+python record.py --task test1
+```
 
-```
-python record.py --task test1 --pair 1
-```
-Double
-
-```
-python record.py --task test1 --pair 2
-```
 
 ## データセットの作成(連続)
 
-Single
-
 ```
-python record.py --task test1 --num 50 --pair 1
-```
-Double
-
-```
-python record.py --task test1 --num 50 --pair 2
+python record.py --task test1 --num 50
 ```
 
 ## 動画作成
@@ -126,3 +105,9 @@ python train.py --task test1 --num_epocs 2000
 |GPU|学習時間目安(長さ200,2画像)|
 |---|---|
 |RTX6000 Ada| 3時間 |
+
+## 実行
+
+```
+python run.py --task test1
+```
