@@ -38,7 +38,11 @@ Double
 ## 環境構築
 
 ```
-git clone 
+git clone https://github.com/FaBoPlatform/OtterARM.git
+```
+
+```
+cd OtterARM
 ```
 
 ```
@@ -48,6 +52,12 @@ conda activate otter
 
 ```
 conda install pytorch==2.5.1 torchvision==0.20.1 -c pytorch
+```
+
+GPUの認識確認
+
+```
+python gpu.py
 ```
 
 ```
