@@ -112,6 +112,7 @@ python train.py --task test1 --num_epocs 2000
 |GPU|学習時間目安(長さ200,2画像)|
 |---|---|
 |RTX6000 Ada| 3時間 |
+|M3 Chip(OSX)| 7時間 |
 
 ## 実行
 
