@@ -65,7 +65,7 @@ pip install -r requirments.txt
 ```
 
 ```
-cd act/detr && pip install -e . && cd ../...
+cd act/detr && pip install -e . && cd ../..
 ```
 
 ## テレオペ
