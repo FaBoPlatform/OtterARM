@@ -38,27 +38,34 @@ Double
 ## 環境構築
 
 ```
-conda create -n otter python=3.8.10
+git clone https://github.com/FaBoPlatform/OtterARM.git
+```
+
+```
+cd OtterARM
+```
+
+```
+conda create -n otter python=3.9
 conda activate otter
 ```
 
 ```
-pip install dynamixel-sdk
-pip install torchvision
-pip install torch
-pip install pyquaternion
-pip install pyyaml
-pip install rospkg
-pip install pexpect
-pip install mujoco==2.3.7
-pip install dm_control==1.0.14
-pip install opencv-python
-pip install matplotlib
-pip install einops
-pip install packaging
-pip install h5py
-pip install ipython
-cd act/detr && pip install -e .
+conda install pytorch==2.5.1 torchvision==0.20.1 -c pytorch
+```
+
+GPUの認識確認
+
+```
+python gpu.py
+```
+
+```
+pip install -r requirments.txt
+```
+
+```
+cd act/detr && pip install -e . && cd ../..
 ```
 
 ## テレオペ
