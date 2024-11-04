@@ -50,9 +50,15 @@ conda create -n otter python=3.9
 conda activate otter
 ```
 
+OSX
 ```
 conda install pytorch==2.5.1 torchvision==0.20.1 -c pytorch
 ```
+Windows, Ubuntu
+```
+conda install pytorch==2.5.1 torchvision==0.20.1 -c pytorch -c nvidia
+```
+
 
 GPUの認識確認
 
