@@ -128,7 +128,13 @@ def generate_video(qpos, qvel, action, images, output_path, camera_names):
         print(f"Created output directory: {output_dir}")
 
     # ビデオを保存
-    ani.save(output_path, writer='ffmpeg', fps=20)
+        # ビデオを保存
+    FFwriter = animation.FFMpegWriter(
+        fps=20,
+        codec='mpeg4',
+        extra_args=['-pix_fmt', 'yuv420p']
+    )
+    ani.save(output_path, writer=FFwriter)
     plt.close()
 
 def main():

@@ -102,10 +102,23 @@ def save_data(num_pairs, cap, total_state_dim, dataset_dir, episode_len, episode
 
         # 画像データセットの作成
         dset_image = {}
-        for cam_name in camera_names:
+        actual_heights = {}
+        actual_widths = {}
+        for a, cam_name in enumerate(camera_names):
+            # 最初のフレームを取得してサイズを取得
+            ret, frame = cap[camera_device_ids[a]].read()
+            if not ret:
+                print(f"カメラ {a} (デバイスID: {camera_device_ids[a]}) からフレームの取得に失敗しました。")
+                frame = np.zeros((height, width, 3), dtype=np.uint8)
+            image_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+            actual_height, actual_width, _ = image_frame.shape
+            actual_heights[cam_name] = actual_height
+            actual_widths[cam_name] = actual_width
+
+            # データセットを作成（ループの外で一度だけ）
             dset_image[f'{cam_name}'] = image.create_dataset(
-                f'{cam_name}', (0, height, width, 3), dtype='uint8',
-                chunks=(1, height, width, 3), maxshape=(episode_len, height, width, 3)
+                f'{cam_name}', (0, actual_height, actual_width, 3), dtype='uint8',
+                chunks=(1, actual_height, actual_width, 3), maxshape=(episode_len, actual_height, actual_width, 3)
             )
 
         i = 0  # フレームカウンターの初期化
@@ -155,9 +168,6 @@ def save_data(num_pairs, cap, total_state_dim, dataset_dir, episode_len, episode
                     
                     for a, cam_name in enumerate(camera_names):
                         dset_image[f'{cam_name}'].resize(new_size, axis=0)
-
-                    # データを保存
-                    for a, cam_name in enumerate(camera_names):
                         dset_image[f'{cam_name}'][i] = image_frames[camera_device_ids[a]]  # 画像フレームを保存
 
                     dset_qpos[i] = positions  # ポジションデータを保存
@@ -376,7 +386,6 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Record Episode Script')
     parser.add_argument('--task', type=str, required=True, help='Task name (e.g., sort)')
     parser.add_argument('--num', type=int, default=1, help='Number of episodes to record')
-                        help='使用するサーボペアの数 (1または2)。デフォルトは2。')
     args = parser.parse_args()
     num_pairs = constants.PAIR
 
@@ -394,7 +403,7 @@ if __name__ == "__main__":
     camera_names = task_config.get('camera_names', ['high'])  # デフォルトで 'high' を使用
     camera_device_ids = task_config.get('camera_device_ids', [0])  # デフォルトで 'high' を使用
     width = task_config.get('width', 640)
-    height = task_config.get('height', 480) 
+    height = task_config.get('height', 480)
     num_episodes = args.num  # 繰り返す回数
 
     # サーボIDの設定
@@ -404,8 +413,8 @@ if __name__ == "__main__":
 
     # 利用可能なカメラデバイスIDを確認
     print("カメラをチェックします...")
-    available_cameras = find_available_cameras()
-    print("利用可能なカメラデバイスID:", available_cameras)
+    #available_cameras = find_available_cameras()
+    #print("利用可能なカメラデバイスID:", available_cameras)
 
     # カメラデバイスIDを指定（必要に応じて変更）
     print(f"カメラデバイスの初期化: {camera_device_ids}, {camera_names}")
@@ -441,7 +450,7 @@ if __name__ == "__main__":
                 controller_follower.enable_torque(follower_ids)
 
                 # リーダーをPWMモードに設定
-                ids = [6]
+                ids = [state_dim]
                 PWM_MODE = 16
                 controller_leader.set_operation_mode(ids, PWM_MODE)
 

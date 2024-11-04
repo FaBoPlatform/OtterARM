@@ -16,7 +16,6 @@ def main():
 
     # コマンドライン引数の解析
     parser = argparse.ArgumentParser(description='Dynamixelサーボ用テレオペレーションスクリプト')
-                        help='使用するサーボペアの数 (1または2)。デフォルトは2。')
     args = parser.parse_args()
     num_pairs = constants.PAIR
 
@@ -45,7 +44,7 @@ def main():
         controller_follower.enable_torque(follower_ids)
 
         # リーダーをPWMモードに設定
-        ids = [6]
+        ids = [state_dim]
         PWM_MODE = 16
         controller_leader.set_operation_mode(ids, PWM_MODE)
 

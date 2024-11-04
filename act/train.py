@@ -21,13 +21,14 @@ from act.policy import ACTPolicy, CNNMLPPolicy
 import IPython
 e = IPython.embed
 
-def make_policy(policy_class, policy_config):
+def make_policy(policy_class, policy_config, device):
     if policy_class == 'ACT':
-        policy = ACTPolicy(policy_config)
+        policy = ACTPolicy(policy_config, device)
     elif policy_class == 'CNNMLP':
-        policy = CNNMLPPolicy(policy_config)
+        policy = CNNMLPPolicy(policy_config, device)
     else:
         raise NotImplementedError
+    policy.to(device)
     return policy
 
 
@@ -51,13 +52,27 @@ def get_image(ts, camera_names):
     return curr_image
 
 
-def forward_pass(data, policy):
+def forward_pass(data, policy, device):
     image_data, qpos_data, action_data, is_pad = data
-    image_data, qpos_data, action_data, is_pad = image_data.cuda(), qpos_data.cuda(), action_data.cuda(), is_pad.cuda()
-    return policy(qpos_data, image_data, action_data, is_pad) # TODO remove None
-
+    image_data = image_data.to(device)
+    qpos_data = qpos_data.to(device)
+    action_data = action_data.to(device)
+    is_pad = is_pad.to(device)
+    return policy(qpos_data, image_data, action_data, is_pad)
 
 def train_bc(train_dataloader, val_dataloader, config):
+
+    # デバイスの確認
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+        print('Using CUDA')
+    elif torch.backends.mps.is_available():
+        device = torch.device('mps')
+        print('Using MPS')
+    else:
+        device = torch.device('cpu')
+        print('Using CPU')
+
     num_epochs = config['num_epochs']
     ckpt_dir = config['ckpt_dir']
     seed = config['seed']
@@ -66,8 +81,7 @@ def train_bc(train_dataloader, val_dataloader, config):
 
     set_seed(seed)
 
-    policy = make_policy(policy_class, policy_config)
-    policy.cuda()
+    policy = make_policy(policy_class, policy_config, device)
     optimizer = make_optimizer(policy_class, policy)
 
     train_history = []
@@ -81,7 +95,7 @@ def train_bc(train_dataloader, val_dataloader, config):
             policy.eval()
             epoch_dicts = []
             for batch_idx, data in enumerate(val_dataloader):
-                forward_dict = forward_pass(data, policy)
+                forward_dict = forward_pass(data, policy, device)
                 epoch_dicts.append(forward_dict)
             epoch_summary = compute_dict_mean(epoch_dicts)
             validation_history.append(epoch_summary)
@@ -100,7 +114,7 @@ def train_bc(train_dataloader, val_dataloader, config):
         policy.train()
         optimizer.zero_grad()
         for batch_idx, data in enumerate(train_dataloader):
-            forward_dict = forward_pass(data, policy)
+            forward_dict = forward_pass(data, policy, device)
             # backward
             loss = forward_dict['loss']
             loss.backward()

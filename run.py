@@ -1,5 +1,5 @@
 import argparse
-from constants import DEFAULT_ARGS
+from constants import TRAIN_CONFIG
 from act.run import eval_bc as run_eval_bc 
 
 def main():

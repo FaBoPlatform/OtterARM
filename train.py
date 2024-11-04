@@ -13,7 +13,7 @@ from einops import rearrange
 from constants import TRAIN_CONFIG, TASK_CONFIGS, STATE_DIM
 from act.utils import load_data, compute_dict_mean, set_seed, detach_dict
 from act.policy import ACTPolicy, CNNMLPPolicy
-from act.train import train_bc, eval_bc, make_policy, make_optimizer  # 必要な関数をインポート
+from act.train import train_bc, make_policy, make_optimizer  # 必要な関数をインポート
 
 def main():
     parser = argparse.ArgumentParser()

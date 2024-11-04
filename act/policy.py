@@ -3,7 +3,7 @@ from torch.nn import functional as F
 import torchvision.transforms as transforms
 import argparse
 
-from detr.main import build_ACT_model_and_optimizer, build_CNNMLP_model_and_optimizer
+from act.detr.main import build_ACT_model_and_optimizer, build_CNNMLP_model_and_optimizer
 import IPython
 e = IPython.embed
 
@@ -71,16 +71,16 @@ def get_args_parser():
     return parser
 
 class ACTPolicy(nn.Module):
-    def __init__(self, args_override):
+    def __init__(self, args_override, device):
         super().__init__()
-        
+        self.device = device
         # train.pyからも呼び出せるように、detr/main.py の get_args_parser を使用して args を取得
         args = get_args_parser().parse_args([])
         for k, v in args_override.items():
             setattr(args, k, v)
-        model, optimizer = build_ACT_model_and_optimizer(args)
-
-        self.model = model # CVAE decoder
+        model, optimizer = build_ACT_model_and_optimizer(args, self.device)
+        self.model = model.to(self.device)
+        #self.model = model # CVAE decoder
         self.optimizer = optimizer
         self.kl_weight = args_override['kl_weight']
         print(f'KL Weight {self.kl_weight}')
@@ -112,16 +112,17 @@ class ACTPolicy(nn.Module):
 
 
 class CNNMLPPolicy(nn.Module):
-    def __init__(self, args_override):
+    def __init__(self, args_override, device):
         super().__init__()
-
+        self.device = device
         # train.pyからも呼び出せるように、detr/main.py の get_args_parser を使用して args を取得
         args = get_args_parser().parse_args([])
         for k, v in args_override.items():
             setattr(args, k, v)
-        model, optimizer = build_CNNMLP_model_and_optimizer(args)
+        model, optimizer = build_CNNMLP_model_and_optimizer(args, self.device)
         
-        self.model = model # decoder
+        #self.model = model # decoder
+        self.model = model.to(self.device)
         self.optimizer = optimizer
 
     def __call__(self, qpos, image, actions=None, is_pad=None):
