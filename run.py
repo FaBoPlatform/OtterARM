@@ -19,8 +19,8 @@ def main():
     camera_names = task_config['camera_names']
     camera_device_ids = task_config['camera_device_ids']
     policy_class = TRAIN_CONFIG['policy_class']
-    width = TRAIN_CONFIG['width']
-    height = TRAIN_CONFIG['height']
+    width = task_config['width']
+    height = task_config['height']
     # fixed parameters
     state_dim = STATE_DIM
     lr_backbone = 1e-5
@@ -40,10 +40,11 @@ def main():
                          'dec_layers': dec_layers,
                          'nheads': nheads,
                          'camera_names': camera_names,
+                         'state_dim': state_dim,  # state_dim を追加
                          }
     elif policy_class == 'CNNMLP':
         policy_config = {'lr': args['lr'], 'lr_backbone': lr_backbone, 'backbone' : backbone, 'num_queries': 1,
-                         'camera_names': camera_names,}
+                         'camera_names': camera_names,'state_dim': state_dim}
     else:
         raise NotImplementedError
 
@@ -53,7 +54,7 @@ def main():
         'state_dim': state_dim,
         'lr': TRAIN_CONFIG['lr'],
         'policy_class': policy_class,
-        'onscreen_render': DEFAULT_ARGS['onscreen_render'],
+        'onscreen_render': TRAIN_CONFIG['onscreen_render'],
         'policy_config': policy_config,
         'task_name': task_name,
         'seed': TRAIN_CONFIG['seed'],

@@ -22,13 +22,14 @@ import cv2
 import IPython
 e = IPython.embed
 
-def make_policy(policy_class, policy_config):
+def make_policy(policy_class, policy_config, device):
     if policy_class == 'ACT':
-        policy = ACTPolicy(policy_config)
+        policy = ACTPolicy(policy_config, device)
     elif policy_class == 'CNNMLP':
-        policy = CNNMLPPolicy(policy_config)
+        policy = CNNMLPPolicy(policy_config, device)
     else:
         raise NotImplementedError
+    policy.to(device)
     return policy
 
 def get_image(ts, camera_names):
@@ -83,14 +84,26 @@ def denormalize_pos(radians):
     return int((radians / 3.14 + 1) * 2048)
 
 def eval_bc(config, ckpt_name, save_episode=True):
+    
+    # デバイスの確認
+    if torch.cuda.is_available():
+        device = torch.device('cuda')
+        print('Using CUDA')
+    elif torch.backends.mps.is_available():
+        device = torch.device('mps')
+        print('Using MPS')
+    else:
+        device = torch.device('cpu')
+        print('Using CPU')
+
     set_seed(1000)
 
     # 転送速度
     buadrate = constants.BAUDRATE
     # サーボIDの設定
-    arm_dim = constants.ARM_DIM
-    follower_ids = list(range(1, arm_dim + 1))  # フォロワーIDリスト
-    leader_ids = list(range(1, arm_dim + 1))    # リーダーIDリスト
+    state_dim = config['state_dim']
+    follower_ids = list(range(1, state_dim + 1))  # フォロワーIDリスト
+    leader_ids = list(range(1, state_dim + 1))    # リーダーIDリスト
 
     ckpt_dir = config['ckpt_dir']
     state_dim = config['state_dim']
@@ -134,7 +147,7 @@ def eval_bc(config, ckpt_name, save_episode=True):
         controller_follower.enable_torque(follower_ids)
 
         # リーダーをPWMモードに設定
-        ids = [6]
+        ids = [state_dim]
         PWM_MODE = 16
         controller_leader.set_operation_mode(ids, PWM_MODE)
 
@@ -149,12 +162,17 @@ def eval_bc(config, ckpt_name, save_episode=True):
         controller_followers.append(controller_follower)
         controller_leaders.append(controller_leader)
 
+    ckpt_dir = config['ckpt_dir']
+    seed = config['seed']
+    policy_class = config['policy_class']
+    policy_config = config['policy_config']
+
     # load policy and stats
     ckpt_path = os.path.join(ckpt_dir, ckpt_name)
-    policy = make_policy(policy_class, policy_config)
+    policy = make_policy(policy_class, policy_config, device)
     loading_status = policy.load_state_dict(torch.load(ckpt_path))
     print(loading_status)
-    policy.cuda()
+    policy.to(device)
     policy.eval()
     print(f'Loaded: {ckpt_path}')
     stats_path = os.path.join(ckpt_dir, f'dataset_stats.pkl')
@@ -173,7 +191,6 @@ def eval_bc(config, ckpt_name, save_episode=True):
         num_queries = policy_config['num_queries']
 
     max_timesteps = int(max_timesteps * 1) # may increase for real-world tasks
-    state_dim = 6
     num_rollouts = 50
     episode_returns = []
     highest_rewards = []
@@ -182,10 +199,9 @@ def eval_bc(config, ckpt_name, save_episode=True):
 
         ### evaluation loop
         if temporal_agg:
-            all_time_actions = torch.zeros([max_timesteps, max_timesteps+num_queries, state_dim]).cuda()
+            all_time_actions = torch.zeros([max_timesteps, max_timesteps+num_queries, state_dim]).to(device)
 
-        qpos_history = torch.zeros((1, max_timesteps, state_dim)).cuda()
-    
+        qpos_history = torch.zeros((1, max_timesteps, state_dim)).to(device)
         with torch.inference_mode():
             for t in range(max_timesteps):
                 
@@ -197,7 +213,7 @@ def eval_bc(config, ckpt_name, save_episode=True):
                 #print(f"qpos{qpos}")
                 qpos = pre_process(qpos)
                 #print(f"qpos{qpos}")
-                qpos = torch.from_numpy(qpos).float().cuda().unsqueeze(0)
+                qpos = torch.from_numpy(qpos).float().to(device).unsqueeze(0)
                 
                 ret = {}    # フレーム取得の成否を格納
                 frame = {}  # フレームデータを格納
@@ -209,7 +225,7 @@ def eval_bc(config, ckpt_name, save_episode=True):
                     curr_image = rearrange(curr_image, 'h w c -> c h w')
                     curr_images.append(curr_image)
                 curr_image = np.stack(curr_images, axis=0)
-                curr_image = torch.from_numpy(curr_image / 255.0).float().cuda().unsqueeze(0)
+                curr_image = torch.from_numpy(curr_image / 255.0).float().to(device).unsqueeze(0)
 
                 ### query policy
                 if config['policy_class'] == "ACT":
@@ -223,7 +239,7 @@ def eval_bc(config, ckpt_name, save_episode=True):
                         k = 0.01
                         exp_weights = np.exp(-k * np.arange(len(actions_for_curr_step)))
                         exp_weights = exp_weights / exp_weights.sum()
-                        exp_weights = torch.from_numpy(exp_weights).cuda().unsqueeze(dim=1)
+                        exp_weights = torch.from_numpy(exp_weights).to(device).unsqueeze(dim=1)
                         raw_action = (actions_for_curr_step * exp_weights).sum(dim=0, keepdim=True)
                     else:
                         raw_action = all_actions[:, t % query_frequency]
