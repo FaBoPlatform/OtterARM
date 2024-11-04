@@ -38,7 +38,7 @@ Double
 ## 環境構築
 
 ```
-conda create -n otter python=3.8.10
+conda create -n otter python=3.9
 conda activate otter
 ```
 
