@@ -42,6 +42,8 @@ def main():
         if not controller_leader.setup_port():
             sys.exit("リーダーのポート設定に失敗しました。プログラムを終了します。")
         controller_follower.enable_torque(follower_ids)
+        POSITION_MODE = 3
+        controller_leader.set_operation_mode(follower_ids, POSITION_MODE)
 
         # リーダーをPWMモードに設定
         ids = [state_dim]
