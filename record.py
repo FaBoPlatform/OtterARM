@@ -39,7 +39,7 @@ def release_cameras(*caps):
             cap.release()
             # print(f"Camera {cap} has been released.")
 
-def setup_camera(device_id, width=320, height=240, fps=30):
+def setup_camera(device_id, width=320, height=240, fps=30, format="MJPG"):
     cap = cv2.VideoCapture(device_id)
     if not cap.isOpened():
         print(f"デバイスID {device_id} のカメラを開けませんでした。")
@@ -49,7 +49,7 @@ def setup_camera(device_id, width=320, height=240, fps=30):
     cap.set(cv2.CAP_PROP_FRAME_WIDTH, width)
     cap.set(cv2.CAP_PROP_FRAME_HEIGHT, height)
     cap.set(cv2.CAP_PROP_FPS, fps)
-    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+    cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*format))
 
     actual_width = cap.get(cv2.CAP_PROP_FRAME_WIDTH)
     actual_height = cap.get(cv2.CAP_PROP_FRAME_HEIGHT)
@@ -104,7 +104,7 @@ def save_data(num_pairs, camera, total_state_dim, dataset_dir, episode_len, epis
         
         for device_id, cam_name in zip(camera_device_ids, camera_names):
             # カメラからフレームを取得
-            print(f"Camera get id from {device_id}, {cam_name}")
+            #print(f"Camera get id from {device_id}, {cam_name}")
             ret, frame = camera[device_id].read()
             if not ret:
                 print(f"カメラ {cam_name} (デバイスID: {device_id}) からフレームの取得に失敗しました。")
@@ -186,7 +186,7 @@ def save_data(num_pairs, camera, total_state_dim, dataset_dir, episode_len, epis
                         print(f"データ収集が完了しました。フレーム数: {pbar.n}")
                         break
 
-                    time.sleep(0.1)  # 少し待機
+                    time.sleep(0.03)  # 少し待機
 
                 terminate_event.set()  # 終了イベントをセット
             except KeyboardInterrupt:
@@ -404,6 +404,8 @@ if __name__ == "__main__":
     episode_len = task_config['episode_len']
     camera_names = task_config.get('camera_names', ['high'])  # デフォルトで 'high' を使用
     camera_device_ids = task_config.get('camera_device_ids', [0])  # デフォルトで 'high' を使用
+    camera_formats = task_config.get('camera_formats', [0])  # デフォルトで 'high' を使用
+    camera_fps = task_config.get('camera_fps', [0])  # デフォルトで 'high' を使用
     width = task_config.get('width', 640)
     height = task_config.get('height', 480)
     num_episodes = args.num  # 繰り返す回数
@@ -422,14 +424,14 @@ if __name__ == "__main__":
     cameras = {}
     valid_camera_device_ids = []
     valid_camera_names = []
-    for idx, device_id in enumerate(camera_device_ids):
-        cameras[device_id] = setup_camera(device_id, width, height)
+    for i, (device_id, fps, format) in enumerate(zip(camera_device_ids, camera_fps, camera_formats)):
+        cameras[device_id] = setup_camera(device_id, width, height, fps, format)
         if cameras[device_id] is None:
             print(f"カメラ {device_id} (デバイスID: {device_id}) の初期化に失敗しました。")
         else:
             print(f"カメラ {device_id} (デバイスID: {device_id},{width},{height}) の初期化に成功しました。")
             valid_camera_device_ids.append(device_id)
-            valid_camera_names.append(camera_names[idx])
+            valid_camera_names.append(camera_names[i])
 
     try:
         for episode in range(num_episodes):
