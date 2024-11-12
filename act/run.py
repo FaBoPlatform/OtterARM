@@ -131,7 +131,8 @@ def eval_bc(config, ckpt_name, save_episode=True):
             print(f"カメラ {device_id} (デバイスID: {device_id}) の初期化に成功しました。")
 
     # 各ペアのコントローラーを設定
-    num_pairs = 1
+    num_pairs = config['pair']
+
     for pair_index in range(num_pairs):
         follower_port = getattr(constants, f'FOLLOWER{pair_index}')
         leader_port = getattr(constants, f'LEADER{pair_index}')
@@ -206,15 +207,16 @@ def eval_bc(config, ckpt_name, save_episode=True):
             for t in range(max_timesteps):
                 
                 ### process previous timestep to get qpos and image_list
-                # フォロワーサーボからデータを読み取る
-                results_follower = controller_followers[0].sync_read_data(follower_ids)
-                # リーダーの位置データを取得
-                qpos = [normalize_pos(results_follower[dxl_id]['position']) for dxl_id in follower_ids]
-                #print(f"qpos{qpos}")
-                qpos = pre_process(qpos)
-                #print(f"qpos{qpos}")
+                qpos_all_pairs = []
+                for pair_index in range(num_pairs):
+                    # 各フォロワーサーボからデータを読み取る
+                    results_follower = controller_followers[pair_index].sync_read_data(follower_ids)
+                    # フォロワーの位置データを取得
+                    qpos = [normalize_pos(results_follower[dxl_id]['position']) for dxl_id in follower_ids]
+                    qpos_all_pairs.extend(qpos)
+                qpos = pre_process(qpos_all_pairs)
                 qpos = torch.from_numpy(qpos).float().to(device).unsqueeze(0)
-                
+
                 ret = {}    # フレーム取得の成否を格納
                 frame = {}  # フレームデータを格納
                 curr_images = []
@@ -250,15 +252,22 @@ def eval_bc(config, ckpt_name, save_episode=True):
 
                 ### post-process actions
                 raw_action = raw_action.squeeze(0).cpu().numpy()
+
+
                 action = post_process(raw_action)
-                target_qpos = action
-                # Convert target_qpos from radians to position counts
-                target_position_counts = [denormalize_pos(angle) for angle in target_qpos]
-                #print("followers action!!")
-                controller_followers[0].sync_write_goal_position(
-                    follower_ids,
-                    target_position_counts,
-                )
+
+                # 各ペアに対してアクションを適用
+                for pair_index in range(num_pairs):
+                    # 対応する部分のアクションを抽出
+                    action_for_pair = action[pair_index * len(follower_ids):(pair_index + 1) * len(follower_ids)]
+                    # 位置カウントに変換
+                    target_position_counts = [denormalize_pos(angle) for angle in action_for_pair]
+                    # フォロワーにゴールポジションを設定
+                    controller_followers[pair_index].sync_write_goal_position(
+                        follower_ids,
+                        target_position_counts,
+                    )
+               
 
                 pass
         

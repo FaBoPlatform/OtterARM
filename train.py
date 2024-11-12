@@ -10,7 +10,7 @@ from copy import deepcopy
 from tqdm import tqdm
 from einops import rearrange
 
-from constants import TRAIN_CONFIG, TASK_CONFIGS, STATE_DIM
+from constants import TRAIN_CONFIG, TASK_CONFIGS, STATE_DIM, PAIR
 from act.utils import load_data, compute_dict_mean, set_seed, detach_dict
 from act.policy import ACTPolicy, CNNMLPPolicy
 from act.train import train_bc, make_policy, make_optimizer  # 必要な関数をインポート
@@ -48,6 +48,7 @@ def main():
 
     # 固定パラメータ
     state_dim = STATE_DIM  # constants.py から読み込み
+    pair = PAIR  # constants.py から読み込み
     lr_backbone = 1e-5
     backbone = 'resnet18'
     if policy_class == 'ACT':
@@ -66,7 +67,7 @@ def main():
             'dec_layers': dec_layers,
             'nheads': nheads,
             'camera_names': camera_names,
-            'state_dim': state_dim,  # state_dim を追加
+            'state_dim': state_dim*pair,  # state_dim を追加
         }
     elif policy_class == 'CNNMLP':
         policy_config = {
@@ -75,7 +76,7 @@ def main():
             'backbone': backbone,
             'num_queries': 1,
             'camera_names': camera_names,
-            'state_dim': state_dim,  # state_dim を追加
+            'state_dim': state_dim*pair,  # state_dim を追加
         }
     else:
         raise NotImplementedError
@@ -84,7 +85,7 @@ def main():
         'num_epochs': num_epochs,
         'ckpt_dir': ckpt_dir,
         'episode_len': episode_len,
-        'state_dim': state_dim,
+        'state_dim': state_dim*pair,
         'lr': args['lr'],
         'policy_class': policy_class,
         'onscreen_render': onscreen_render,

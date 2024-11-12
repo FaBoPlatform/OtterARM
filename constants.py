@@ -8,25 +8,26 @@ DATA_DIR = './data'  # データフォルダを指定
 # ポートを指定
 #LEADER0 = "COM4"
 #FOLLOWER0 = "COM7"
-LEADER0 = "/dev/tty.usbserial-FT94EMKQ"
-FOLLOWER0 = "/dev/tty.usbserial-FT94EMR8"
-LEADER1 = "COM3"
-FOLLOWER1 = "COM6"
+LEADER0 = "/dev/ttyUSB0"
+FOLLOWER0 = "/dev/ttyUSB1"
+LEADER1 = "/dev/ttyUSB2"
+FOLLOWER1 = "/dev/ttyUSB3"
 
 BAUDRATE = 1000000
 
 # アームのペア数とアームの関節数
-PAIR = 1
-STATE_DIM = 5
+PAIR = 2
+STATE_DIM = 6
 
 TASK_CONFIGS = {
     'test1': {
         'dataset_dir': DATA_DIR + '/test1',
-        'episode_len': 200,
+        'episode_len': 300,
         'num_episodes': 30,
-        'camera_names': ['front'],
-        'camera_device_ids': [0],
-        'camera_port': [0],
+        'camera_names': ['left','right','front','top'],
+        'camera_device_ids': [0,2,8,14],
+        'camera_formats': ["YUYV","YUYV","MJPG","MJPG"],
+        'camera_fps': [30,30,30,30],
         'width': 320,
         'height': 240,
     },

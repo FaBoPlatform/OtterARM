@@ -11,7 +11,7 @@ def main():
 
     task_name = args.task
 
-    from constants import TASK_CONFIGS, STATE_DIM, TRAIN_CONFIG
+    from constants import TASK_CONFIGS, STATE_DIM, PAIR, TRAIN_CONFIG
     task_config = TASK_CONFIGS[task_name]
     dataset_dir = task_config['dataset_dir']
     num_episodes = task_config['num_episodes']
@@ -23,6 +23,7 @@ def main():
     height = task_config['height']
     # fixed parameters
     state_dim = STATE_DIM
+    pair = PAIR
     lr_backbone = 1e-5
     backbone = 'resnet18'
     if policy_class == 'ACT':
@@ -40,11 +41,11 @@ def main():
                          'dec_layers': dec_layers,
                          'nheads': nheads,
                          'camera_names': camera_names,
-                         'state_dim': state_dim,  # state_dim を追加
+                         'state_dim': state_dim*pair,  # state_dim を追加
                          }
     elif policy_class == 'CNNMLP':
         policy_config = {'lr': args['lr'], 'lr_backbone': lr_backbone, 'backbone' : backbone, 'num_queries': 1,
-                         'camera_names': camera_names,'state_dim': state_dim}
+                         'camera_names': camera_names,'state_dim': state_dim*pair}
     else:
         raise NotImplementedError
 
@@ -52,6 +53,7 @@ def main():
         'ckpt_dir': TRAIN_CONFIG['ckpt_dir'],
         'episode_len': episode_len,
         'state_dim': state_dim,
+        'pair': pair,
         'lr': TRAIN_CONFIG['lr'],
         'policy_class': policy_class,
         'onscreen_render': TRAIN_CONFIG['onscreen_render'],
