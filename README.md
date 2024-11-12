@@ -120,6 +120,8 @@ python train.py --task test1 --num_epocs 2000
 |RTX6000 Ada(Ubuntu)| ?分 |
 |RTX3090(Ubuntu) | 10分 |
 |RTX4060(Ubuntu) | 30分 |
+|Jetson AGX Orin | 30分 |
+|Jetson Orin Nano | 120分 |
 |M3(OSX)| 7時間 |
 
 ## 実行
