@@ -15,8 +15,8 @@ leader1_ids = list(range(1, state_dim + 1))    # 1からstate_dimまでのリー
 initial_goal_positions = [2047] * state_dim
 
 # Create controller instances
-controller_follower = DynamixelController(constants.FOLLOWER0, baudrate)
-controller_leader = DynamixelController(constants.LEADER0, baudrate)
+controller_follower = DynamixelController(constants.FOLLOWER1, baudrate)
+controller_leader = DynamixelController(constants.LEADER1, baudrate)
 
 # Attempt to set up the ports
 if not controller_follower.setup_port():
